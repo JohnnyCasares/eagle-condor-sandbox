@@ -1,0 +1,8 @@
+# Static file host for public/index.html. Separate from the pstad container
+# on purpose — pstad stays API-only (see server/README.md's "does not know
+# what Excel is" contract); the UI is just files, and nginx is the smallest
+# thing that can serve them.
+
+FROM nginx:alpine
+COPY public/ /usr/share/nginx/html/
+EXPOSE 80

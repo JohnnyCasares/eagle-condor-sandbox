@@ -1,0 +1,68 @@
+{
+ "suites": [
+  {
+   "title": "ta\\create-domestic.spec.js",
+   "file": "ta/create-domestic.spec.js",
+   "column": 0,
+   "line": 0,
+   "specs": [
+    {
+     "title": "Create and Submit Travel Authorization - Domestic Airfare 0",
+     "ok": false,
+     "tags": [
+      "smoke"
+     ],
+     "tests": [
+      {
+       "timeout": 1680000,
+       "annotations": [],
+       "expectedStatus": "passed",
+       "projectId": "ta",
+       "projectName": "ta",
+       "results": [
+        {
+         "workerIndex": 0,
+         "parallelIndex": 0,
+         "status": "failed",
+         "duration": 63974,
+         "error": {
+          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('iframe[name=\"ptModFrame_0\"]').contentFrame().getByText('Pending Approval')\nExpected: visibl",
+          "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('iframe[name=\"ptModFrame_0\"]').contentFrame().getByText('Pending Approval')\nExpected: visible\nTimeout: 30000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 30000ms\u001b[22m\n\u001b[2m  - waiting for locator('iframe[name=\"ptModFrame_0\"]').contentFrame().getByText('Pending Approval')\u001b[22m\n\n    at openAndGetApprovers (c:\\Users\\jcasares\\Documents\\playwright\\PlaywrightTA\\automation\\modules\\ta\\approvers.js:98:61)\n    at c:\\Users\\jcasares\\Documents\\playwright\\PlaywrightTA\\automation\\tests\\ta\\create-domestic.spec.js:47:25\n    at c:\\Users\\jcasares\\Documents\\playwright\\PlaywrightTA\\automation\\tests\\ta\\create-domestic.spec.js:46:5",
+          "location": {
+           "file": "c:\\Users\\jcasares\\Documents\\playwright\\PlaywrightTA\\automation\\modules\\ta\\approvers.js",
+           "column": 61,
+           "line": 98
+          },
+          "snippet": "\u001b[90m   at \u001b[39m..\\modules\\ta\\approvers.js:98\n\n\u001b[0m \u001b[90m  96 |\u001b[39m     page\u001b[33m.\u001b[39mlocator(\u001b[32m'#VIEW_APPROVALS'\u001b[39m)\u001b[33m.\u001b[39mclick()\n \u001b[90m  97 |\u001b[39m   )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m  98 |\u001b[39m   \u001b[36mawait\u001b[39m expect(approvalFrame\u001b[33m.\u001b[39mgetByText(\u001b[32m'Pending Approval'\u001b[39m))\u001b[33m.\u001b[39mtoBeVisible({ timeout\u001b[33m:\u001b[39m \u001b[35m30\u001b[39m_000 })\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                             \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m  99 |\u001b[39m\n \u001b[90m 100 |\u001b[39m   \u001b[36mconst\u001b[39m approvers \u001b[33m=\u001b[39m \u001b[36mawait\u001b[39m getApprovers(page\u001b[33m,\u001b[39m approvalFrame\u001b[33m,\u001b[39m testInfo)\u001b[33m;\u001b[39m\n \u001b[90m 101 |\u001b[39m\u001b[0m"
+         },
+         "retry": 0,
+         "startTime": "2026-08-17T15:35:29.253Z",
+         "annotations": [],
+         "errorLocation": {
+          "file": "c:\\Users\\jcasares\\Documents\\playwright\\PlaywrightTA\\automation\\modules\\ta\\approvers.js",
+          "column": 61,
+          "line": 98
+         }
+        }
+       ],
+       "status": "unexpected"
+      }
+     ],
+     "id": "e340c9bdfe89df7bd630-a6d15b146ff5f052c023",
+     "file": "ta/create-domestic.spec.js",
+     "line": 25,
+     "column": 3
+    }
+   ]
+  }
+ ],
+ "errors": [],
+ "stats": {
+  "startTime": "2026-08-17T15:35:27.231Z",
+  "duration": 69067.84599999999,
+  "expected": 0,
+  "skipped": 0,
+  "unexpected": 1,
+  "flaky": 0
+ }
+}

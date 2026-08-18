@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Run Playwright tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+
+      # --with-deps only works on Debian/Ubuntu — exactly what this runner
+      # is, which is the whole reason a real local box gave us trouble
+      # earlier (Oracle Linux is dnf-based, and OS version drift bit us too).
+      - run: npx playwright install --with-deps chromium
+
+      - run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  docker-build:
+    name: Build the Docker Compose stack
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Build-only, no push, no run — this is a smoke test that the
+      # Dockerfiles still match the repo, not a deploy step. Catches the
+      # class of bug where a file gets renamed/moved and a COPY silently
+      # starts failing, without needing Docker installed anywhere local.
+      - run: docker compose build

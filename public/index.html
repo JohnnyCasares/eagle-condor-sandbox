@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Sandbox runner — pstad</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.3rem; }
+  p.hint { color: #555; font-size: 0.9rem; }
+  .config { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  .config input { font-size: 0.85rem; padding: 0.4rem 0.5rem; border: 1px solid #ccc; border-radius: 4px; }
+  .config input[name="server"] { flex: 1; min-width: 220px; }
+  .config input[name="token"] { flex: 1; min-width: 220px; }
+  .buttons { display: flex; gap: 0.75rem; margin: 1.25rem 0; }
+  button { font-size: 1rem; padding: 0.6rem 1.1rem; border: 1px solid #333; background: #fafafa; border-radius: 6px; cursor: pointer; }
+  button:hover { background: #eee; }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .run { border: 1px solid #ddd; border-radius: 8px; padding: 0.9rem 1.1rem; margin-bottom: 0.9rem; }
+  .run .id { font-family: monospace; font-size: 0.8rem; color: #777; }
+  .state { font-weight: 600; text-transform: uppercase; font-size: 0.8rem; padding: 0.1rem 0.5rem; border-radius: 4px; }
+  .state.queued, .state.running { background: #fff3cd; color: #7a5c00; }
+  .state.succeeded { background: #d4edda; color: #155724; }
+  .state.failed, .state.errored, .state.timed_out { background: #f8d7da; color: #721c24; }
+  .state.cancelled { background: #e2e3e5; color: #383d41; }
+  .path { font-family: monospace; font-size: 0.8rem; color: #444; word-break: break-all; margin-top: 0.4rem; }
+  .test-line { font-size: 0.85rem; margin-top: 0.3rem; }
+  .error-msg { color: #a12; font-size: 0.85rem; margin-top: 0.4rem; }
+</style>
+</head>
+<body>
+  <h1>Sandbox runner — driving the real pstad server</h1>
+  <p class="hint">
+    Open this page in two browser windows (or one normal + one incognito) to simulate two
+    users hitting <code>pstad</code> at once. Each click submits a real run through
+    <code>POST /v1/runs</code> against the <code>sandbox.eagle</code> /
+    <code>sandbox.condor</code> workflows in <code>workflows.json</code>. Results are on
+    disk under <code>sandbox/.runs/&lt;run-id&gt;/</code> on the machine running
+    <code>pstad</code>.
+  </p>
+
+  <div class="config">
+    <input name="server" placeholder="pstad server URL" value="http://127.0.0.1:8090" />
+    <input name="token" placeholder="PSTAD_TOKEN" type="password" value="sandbox-dev-token" />
+  </div>
+
+  <div class="buttons">
+    <button id="btn-eagle">Run Eagle workflow</button>
+    <button id="btn-condor">Run Condor workflow</button>
+  </div>
+
+  <div id="runs"></div>
+
+<script type="module">
+  const runsEl = document.getElementById('runs');
+  const serverInput = document.querySelector('input[name="server"]');
+  const tokenInput = document.querySelector('input[name="token"]');
+  const cards = new Map(); // run id -> card element
+
+  // Remember server/token across reloads — same values in both windows,
+  // not per-user state, so sharing them via localStorage is harmless.
+  serverInput.value = localStorage.getItem('pstad.server') || serverInput.value;
+  tokenInput.value = localStorage.getItem('pstad.token') || tokenInput.value;
+  serverInput.addEventListener('change', () => localStorage.setItem('pstad.server', serverInput.value));
+  tokenInput.addEventListener('change', () => localStorage.setItem('pstad.token', tokenInput.value));
+
+  function authHeaders() {
+    return { Authorization: `Bearer ${tokenInput.value}` };
+  }
+
+  function renderCard(run) {
+    let card = cards.get(run.id);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'run';
+      runsEl.prepend(card);
+      cards.set(run.id, card);
+    }
+
+    const summary = run.summary;
+    const resultLines = (summary?.tests ?? [])
+      .map(t => `<div class="test-line">${t.status === 'passed' ? '✅' : '❌'} ${t.title} (${Math.round(t.durationMs)}ms)${t.error ? ' — ' + t.error : ''}</div>`)
+      .join('');
+    const errorLine = run.error ? `<div class="error-msg">${run.error}</div>` : '';
+
+    card.innerHTML = `
+      <div><strong>${run.workflowId}</strong> <span class="state ${run.state}">${run.state}</span></div>
+      <div class="id">${run.id} — submitted by ${run.submittedBy || '(none)'}</div>
+      ${resultLines}
+      ${errorLine}
+      <div class="path">sandbox/.runs/${run.id}/</div>
+    `;
+  }
+
+  async function pollUntilDone(id) {
+    const TERMINAL = new Set(['succeeded', 'failed', 'cancelled', 'timed_out', 'errored']);
+    const poll = async () => {
+      const res = await fetch(`${serverInput.value}/v1/runs/${id}`, { headers: authHeaders() });
+      const run = await res.json();
+      renderCard(run);
+      if (!TERMINAL.has(run.state)) {
+        setTimeout(poll, 1000);
+      }
+    };
+    poll();
+  }
+
+  async function submit(workflowId) {
+    // Real API contract: multipart/form-data with a "config" JSON part —
+    // not a plain JSON body — even though this workflow uploads no files.
+    const form = new FormData();
+    form.append(
+      'config',
+      new Blob([JSON.stringify({ workflowId, env: 'TST', submittedBy: 'sandbox-ui' })], { type: 'application/json' }),
+      'config.json',
+    );
+
+    const res = await fetch(`${serverInput.value}/v1/runs`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: form,
+    });
+    const run = await res.json();
+    if (!res.ok) {
+      alert(`Failed to submit: ${run.error ?? res.statusText}`);
+      return;
+    }
+    renderCard(run);
+    pollUntilDone(run.id);
+  }
+
+  document.getElementById('btn-eagle').addEventListener('click', () => submit('sandbox.eagle'));
+  document.getElementById('btn-condor').addEventListener('click', () => submit('sandbox.condor'));
+</script>
+</body>
+</html>

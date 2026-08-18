@@ -1,0 +1,12 @@
+{
+  "name": "eagle-condor-sandbox",
+  "version": "1.0.0",
+  "description": "Playwright tests against a public site, driving a small Go endpoint server that queues runs with per-run isolation.",
+  "type": "module",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.60.0"
+  }
+}

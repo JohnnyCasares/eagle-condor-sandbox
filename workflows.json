@@ -1,0 +1,43 @@
+{
+  "$comment": [
+    "Sandbox manifest — read by the real pstad server (../server), pointed",
+    "here via PSTAD_AUTOMATION_DIR instead of ../automation. Proves pstad's",
+    "run machinery (queueing, isolation, kill semantics, report parsing) is",
+    "generic: neither workflow below has any input, so every CSV/receipts",
+    "code path in catalog.go and handlers.go is simply never exercised."
+  ],
+  "version": 1,
+
+  "modules": [
+    { "code": "SANDBOX", "label": "Sandbox" }
+  ],
+
+  "csvSchemas": {},
+
+  "workflows": [
+    {
+      "id": "sandbox.eagle",
+      "module": "SANDBOX",
+      "label": "Eagle search",
+      "description": "Searches birdsoftheworld.org for Bald Eagle and asserts the scientific name.",
+      "spec": "tests/eagle.spec.js",
+      "class": "sandbox",
+      "defaultTimeoutSeconds": 60,
+      "maxTimeoutSeconds": 120,
+      "inputs": [],
+      "results": { "outputJson": false, "files": [] }
+    },
+    {
+      "id": "sandbox.condor",
+      "module": "SANDBOX",
+      "label": "Condor search",
+      "description": "Searches birdsoftheworld.org for Andean Condor and asserts the scientific name.",
+      "spec": "tests/condor.spec.js",
+      "class": "sandbox",
+      "defaultTimeoutSeconds": 60,
+      "maxTimeoutSeconds": 120,
+      "inputs": [],
+      "results": { "outputJson": false, "files": [] }
+    }
+  ]
+}

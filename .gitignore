@@ -1,0 +1,21 @@
+# Node / Playwright
+node_modules/
+test-results/
+playwright-report/
+.playwright/
+.playwright-mcp/
+
+# pstad runs (see server/README.md — one directory per execution)
+.runs/
+
+# Go build output — anchored paths only. A bare "pstad" here would also match
+# server/cmd/pstad/, the SOURCE directory, and silently exclude main.go from
+# every commit — which is exactly what happened once already.
+server/bin/
+*.exe
+/server/pstad
+pstad.log
+server.log
+
+# Credentials — PSTAD_TOKEN is supplied at runtime, never committed
+.env

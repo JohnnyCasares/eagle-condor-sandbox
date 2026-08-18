@@ -1,0 +1,31 @@
+services:
+  pstad:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    ports:
+      - "8090:8090"
+    environment:
+      # Override via a .env file or `docker compose run -e`, never commit a
+      # real token here.
+      PSTAD_TOKEN: ${PSTAD_TOKEN:-sandbox-dev-token}
+    volumes:
+      # Runs persist across container restarts/rebuilds instead of vanishing
+      # with the container.
+      - pstad-runs:/app/.runs
+    # Chromium's default /dev/shm (64MB) is too small under Docker's default
+    # and it silently crashes mid-run rather than erroring clearly. ipc: host
+    # is what Playwright's own Docker docs recommend to avoid that.
+    ipc: host
+
+  ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    ports:
+      - "8091:80"
+    depends_on:
+      - pstad
+
+volumes:
+  pstad-runs:
