@@ -9,5 +9,5 @@ test("Bald Eagle — species page shows the scientific name", async ({ page }) =
   await expect(showcase).toBeVisible();
   await showcase.click();
 
-  await expect(page.getByText("This Is Definitely Not The Right Name").first()).toBeVisible();
+  await expect(page.getByText("Haliaeetus leucocephalus").first()).toBeVisible();
 });
