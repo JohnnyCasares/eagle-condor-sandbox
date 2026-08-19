@@ -37,7 +37,12 @@ export default defineConfig({
 
   use: {
     headless: process.env.PW_HEADLESS !== "false",
-    trace: /** @type {any} */ (process.env.PW_TRACE ?? "retain-on-failure"),
+    // "on" (not "retain-on-failure"): the whole point of this UI is to show
+    // the trace for any run, not just failed ones. No credentials ever flow
+    // through eagle/condor's fill() calls, so nothing sensitive ends up in
+    // a passing run's trace here — unlike the real PS suite this pattern
+    // was split from, where trace defaults to "off" for exactly that reason.
+    trace: /** @type {any} */ (process.env.PW_TRACE ?? "on"),
     screenshot: "only-on-failure",
   },
 

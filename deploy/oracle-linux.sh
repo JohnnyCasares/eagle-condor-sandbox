@@ -28,6 +28,9 @@ sudo firewall-cmd --permanent --add-port=8091/tcp
 sudo firewall-cmd --reload
 
 echo "== Cloning the project =="
+# The minimal Oracle Linux cloud image doesn't ship git — caught by actually
+# running this script, not assumed.
+command -v git >/dev/null || sudo dnf install -y git
 if [ ! -d eagle-condor-sandbox ]; then
   git clone https://github.com/JohnnyCasares/eagle-condor-sandbox.git
 fi

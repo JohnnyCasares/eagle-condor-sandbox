@@ -24,6 +24,9 @@
   .state.cancelled { background: #e2e3e5; color: #383d41; }
   .path { font-family: monospace; font-size: 0.8rem; color: #444; word-break: break-all; margin-top: 0.4rem; }
   .test-line { font-size: 0.85rem; margin-top: 0.3rem; }
+  .artifacts { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 0.6rem; }
+  .artifact-download { font-size: 0.78rem; padding: 0.25rem 0.6rem; border-radius: 4px; background: #eef; border-color: #99b; }
+  .artifact-download:hover { background: #dde; }
   .error-msg { color: #a12; font-size: 0.85rem; margin-top: 0.4rem; }
 </style>
 </head>
@@ -39,7 +42,7 @@
   </p>
 
   <div class="config">
-    <input name="server" placeholder="pstad server URL" value="http://127.0.0.1:8090" />
+    <input name="server" placeholder="pstad server URL" />
     <input name="token" placeholder="PSTAD_TOKEN" type="password" value="sandbox-dev-token" />
   </div>
 
@@ -56,9 +59,17 @@
   const tokenInput = document.querySelector('input[name="token"]');
   const cards = new Map(); // run id -> card element
 
+  // Default to wherever this page itself is being served from, on pstad's
+  // port — works unmodified whether that's this VM, a different one, or a
+  // local static server. Opened straight from disk (file://, no hostname)
+  // falls back to localhost, matching local dev against `docker compose up`.
+  const defaultServer = location.hostname
+    ? `${location.protocol}//${location.hostname}:8090`
+    : 'http://127.0.0.1:8090';
+
   // Remember server/token across reloads — same values in both windows,
   // not per-user state, so sharing them via localStorage is harmless.
-  serverInput.value = localStorage.getItem('pstad.server') || serverInput.value;
+  serverInput.value = localStorage.getItem('pstad.server') || defaultServer;
   tokenInput.value = localStorage.getItem('pstad.token') || tokenInput.value;
   serverInput.addEventListener('change', () => localStorage.setItem('pstad.server', serverInput.value));
   tokenInput.addEventListener('change', () => localStorage.setItem('pstad.token', tokenInput.value));
@@ -82,14 +93,58 @@
       .join('');
     const errorLine = run.error ? `<div class="error-msg">${run.error}</div>` : '';
 
+    // GET /v1/runs/{id} already embeds artifacts — no separate call needed.
+    // Every download goes through fetch()+blob rather than a plain <a href>
+    // because the endpoint requires the bearer token; a browser navigating
+    // straight to the URL has no way to attach that header.
+    const artifactLines = (run.artifacts ?? [])
+      .map(a => `<button class="artifact-download" data-run="${run.id}" data-artifact="${a.id}" data-filename="${a.name}">
+          ${a.kind === 'trace' ? '🔍 trace' : a.name} (${Math.round(a.size / 1024)} KB)
+        </button>`)
+      .join('');
+
     card.innerHTML = `
       <div><strong>${run.workflowId}</strong> <span class="state ${run.state}">${run.state}</span></div>
       <div class="id">${run.id} — submitted by ${run.submittedBy || '(none)'}</div>
       ${resultLines}
       ${errorLine}
+      ${artifactLines ? `<div class="artifacts">${artifactLines}</div>` : ''}
       <div class="path">sandbox/.runs/${run.id}/</div>
     `;
   }
+
+  async function downloadArtifact(runId, artifactId, filename) {
+    const res = await fetch(`${serverInput.value}/v1/runs/${runId}/artifacts/${artifactId}`, {
+      headers: authHeaders(),
+    });
+    if (!res.ok) {
+      alert(`Failed to download ${filename}: ${res.status} ${res.statusText}`);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    // Must be attached to the document for the download attribute (and
+    // filename/extension) to be honored reliably across browsers — clicking
+    // a detached element is what produced the extensionless downloads.
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Revoking immediately can race with the download actually starting;
+    // give it a beat.
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // Delegated listener — cards (and their artifact buttons) are created
+  // dynamically by renderCard(), so a listener bound at page-load time
+  // would miss every one of them.
+  runsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.artifact-download');
+    if (!btn) return;
+    downloadArtifact(btn.dataset.run, btn.dataset.artifact, btn.dataset.filename);
+  });
 
   async function pollUntilDone(id) {
     const TERMINAL = new Set(['succeeded', 'failed', 'cancelled', 'timed_out', 'errored']);
@@ -107,10 +162,16 @@
   async function submit(workflowId) {
     // Real API contract: multipart/form-data with a "config" JSON part —
     // not a plain JSON body — even though this workflow uploads no files.
+    //
+    // trace: true is required here, separately from playwright.config.js's
+    // own default — pstad's exec.go forces PW_TRACE=off in every child
+    // process unless the submitting request asks otherwise (a real security
+    // default upstream, where traces can hold PeopleSoft credentials; moot
+    // here since eagle/condor never fill anything secret).
     const form = new FormData();
     form.append(
       'config',
-      new Blob([JSON.stringify({ workflowId, env: 'TST', submittedBy: 'sandbox-ui' })], { type: 'application/json' }),
+      new Blob([JSON.stringify({ workflowId, env: 'TST', submittedBy: 'sandbox-ui', trace: true })], { type: 'application/json' }),
       'config.json',
     );
 
