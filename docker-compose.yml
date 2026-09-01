@@ -9,6 +9,11 @@ services:
       # Override via a .env file or `docker compose run -e`, never commit a
       # real token here.
       PSTAD_TOKEN: ${PSTAD_TOKEN:-sandbox-dev-token}
+      # 4, not the Go default of 2 — sized for this VM's 2 OCPUs (the real
+      # ceiling here is CPU during page navigation, not the 12 GB of RAM).
+      # Bump via a .env entry if you need a different number later; no code
+      # change required either way.
+      PSTAD_MAX_CONCURRENT: ${PSTAD_MAX_CONCURRENT:-4}
     volumes:
       # Runs persist across container restarts/rebuilds instead of vanishing
       # with the container.
