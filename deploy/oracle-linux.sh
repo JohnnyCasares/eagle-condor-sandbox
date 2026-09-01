@@ -22,9 +22,10 @@ echo "== Adding \$USER to the docker group (avoids needing sudo for every docker
 sudo usermod -aG docker "$USER"
 echo "   -> log out and back in (or run 'newgrp docker') for this to take effect"
 
-echo "== Opening firewalld for pstad (8090) and the UI (8091) =="
+echo "== Opening firewalld for pstad (8090), the static UI (8091), and Streamlit (8092) =="
 sudo firewall-cmd --permanent --add-port=8090/tcp
 sudo firewall-cmd --permanent --add-port=8091/tcp
+sudo firewall-cmd --permanent --add-port=8092/tcp
 sudo firewall-cmd --reload
 
 echo "== Cloning the project =="
@@ -44,9 +45,12 @@ echo "   $TOKEN"
 
 echo ""
 echo "== Ready. Two things still needed before 'docker compose up': =="
-echo "  1. OCI's Security List / Network Security Group must ALSO allow ingress on 8090"
-echo "     and 8091 — firewalld alone is not enough, same lesson as last night's port-8080"
-echo "     issue but at the cloud layer instead of the OS layer."
+echo "  1. OCI's Security List / Network Security Group must ALSO allow ingress on 8090,"
+echo "     8091, and 8092 — firewalld alone is not enough, same lesson as last night's"
+echo "     port-8080 issue but at the cloud layer instead of the OS layer. This bit again"
+echo "     when 8092 (Streamlit) was added after 8090/8091 were already provisioned —"
+echo "     re-running this script updates firewalld, but the OCI Security List has to be"
+echo "     updated by hand in the Console regardless of whether this script has run before."
 echo "  2. If containers fail with permission-denied errors that don't make sense, it's"
 echo "     probably SELinux (enabled by default on Oracle Linux, not on Ubuntu). Confirm"
 echo "     with 'sudo ausearch -m avc -ts recent' before reaching for 'setenforce 0' —"
