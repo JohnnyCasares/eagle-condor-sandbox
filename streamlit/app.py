@@ -18,7 +18,16 @@ st.set_page_config(page_title="Sandbox runner (Streamlit)", page_icon="🦅", la
 
 _TERMINAL = {"succeeded", "failed", "cancelled", "timed_out", "errored"}
 _DEFAULTS = {
-    "server_url": "http://127.0.0.1:8090",
+    # Unlike public/index.html (whose fetch() calls run in the user's own
+    # browser, so a public IP/hostname makes sense), this app's requests.*
+    # calls run server-side, inside this container. "127.0.0.1" there means
+    # "this container itself" — pstad doesn't listen there, so every request
+    # fails with a raw connection-refused traceback that looks nothing like
+    # an auth error but got mistaken for one. "pstad" is the Docker Compose
+    # service name — resolves correctly for any container on the same
+    # compose stack, and unlike a hardcoded public IP, doesn't silently
+    # break if the VM's address ever changes.
+    "server_url": "http://pstad:8090",
     "token": "sandbox-dev-token",
     "run_id": None,
     "workflow_id": None,
@@ -49,9 +58,19 @@ def submit(workflow_id: str) -> None:
             "application/json",
         )
     }
-    resp = requests.post(f"{base_url()}/v1/runs", headers=headers(), files=files, timeout=15)
+    try:
+        resp = requests.post(f"{base_url()}/v1/runs", headers=headers(), files=files, timeout=15)
+    except requests.exceptions.RequestException as exc:
+        # A raw Python traceback here (the pre-fix behavior) reads exactly
+        # like a fatal app bug — including to a user trying to diagnose an
+        # "invalid token" problem that was actually this the whole time.
+        st.error(
+            f"Could not reach pstad at {base_url()} — is the server URL correct, "
+            f"and is pstad reachable from this container? ({exc})"
+        )
+        return
     if not resp.ok:
-        st.error(f"Failed to submit: {resp.text}")
+        st.error(f"pstad rejected the request ({resp.status_code}): {resp.text}")
         return
     run = resp.json()
     st.session_state.run_id = run["id"]
