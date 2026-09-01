@@ -27,5 +27,17 @@ services:
     depends_on:
       - pstad
 
+  # Proves Streamlit itself can be Dockerized and hosted here, not just a
+  # static page — see Dockerfile.streamlit. Same pstad backend as `ui`, a
+  # second, independent frontend on it.
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile.streamlit
+    ports:
+      - "8092:8501"
+    depends_on:
+      - pstad
+
 volumes:
   pstad-runs:
