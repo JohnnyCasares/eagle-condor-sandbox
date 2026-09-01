@@ -44,7 +44,10 @@ click through both workflows. Results land under `.runs/<run-id>/`.
 PSTAD_TOKEN=sandbox-dev-token docker compose up --build
 ```
 
-`pstad` on `http://localhost:8090`, the UI on `http://localhost:8091`. The
+`pstad` on `http://localhost:8090`, the static UI on `http://localhost:8091`,
+and a Streamlit client with the same functionality on `http://localhost:8092`
+(see `streamlit/app.py` — built to prove Streamlit itself can be Dockerized
+and hosted here, not just a static page). The
 `pstad` service uses Microsoft's own Playwright image pinned to the same
 version as `package.json`, so there's no OS/dependency guessing — the browsers
 are already installed in the image.
