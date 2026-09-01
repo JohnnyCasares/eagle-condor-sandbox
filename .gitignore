@@ -5,6 +5,11 @@ playwright-report/
 .playwright/
 .playwright-mcp/
 
+# Python / Streamlit
+streamlit/venv/
+__pycache__/
+*.pyc
+
 # pstad runs (see server/README.md — one directory per execution)
 .runs/
 
